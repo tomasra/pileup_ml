@@ -3,10 +3,31 @@ name = "pileup-ml"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
+    "h5py>=3.13.0",
     "ipykernel>=6.29.5",
     "matplotlib>=3.10.3",
     "numpy>=2.2.6",
+    "open3d>=0.19.0",
     "pandas>=2.2.3",
+    "pydantic>=2.11.7",
+    "python-dotenv>=1.1.0",
+    "torch>=2.7.0",
+    "torch-cluster>=1.6.3",
+    "torch-geometric>=2.6.1",
+    "torchvision>=0.22.0",
+    "uproot>=5.6.2",
+]
+
+[tool.uv]
+package = true
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+packages = ["pileup_ml"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
 ]
