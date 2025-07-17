@@ -4,7 +4,7 @@ import uproot
 import numpy as np
 from tqdm import tqdm
 
-from pileup_ml.detectors.pixels import PixelDetector, RowColMapping
+from pileup_ml.detectors.pixels import PixelModule, PixelDetector, RowColMapping
 
 
 class PixelDigiEvent:
@@ -41,6 +41,22 @@ class PixelDigiEvent:
 
         global_coords = np.concatenate(global_coords_det_ids)
         return global_coords
+
+    def to_images(self) -> list[tuple[PixelModule, np.ndarray]]:
+        """Represent digitized hits as 2D images for each pixel module.
+        ADC values are used as pixel intensities and normalized to [0, 1] range.
+        """
+        images = []
+        for det_id in self.det_ids:
+            module = self.detector[det_id]
+            img = np.zeros((module.rows, module.cols), dtype=np.float32)
+            rows = self.det_id_hits[det_id]['row']
+            cols = self.det_id_hits[det_id]['col']
+            adcs = self.det_id_hits[det_id]['adc']
+            img[rows, cols] = adcs
+            img /= 255.0  # if ADC max value is 255
+            images.append((module, img))
+        return images
 
     @staticmethod
     def read_root(path: str, detector: PixelDetector, branch="analyzer/digiTree") -> list[Self]:
