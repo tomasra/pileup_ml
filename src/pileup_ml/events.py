@@ -11,9 +11,13 @@ class PixelDigiEvent:
     # TODO: refactor this to store and access row/col/adc in a more efficient way
     """Represents digi-level pixel detector hits of a single event
     """
-    def __init__(self, id_: int, det_id_hits: dict[int, dict]):
+    def __init__(self,
+                 id_: int,
+                 det_id_hits: dict[int, dict],
+                 detector: PixelDetector):
         self.id_ = id_
         self.det_id_hits = det_id_hits
+        self.detector = detector
 
     def __len__(self):
         """Number of pixel hits in the event
@@ -24,23 +28,22 @@ class PixelDigiEvent:
     def det_ids(self):
         return self.det_id_hits.keys()
 
-    def to_global_coords(self, pix_det: PixelDetector):
+    def to_global_coords(self) -> np.ndarray:
         """Iterate through pixel detector modules and convert
         their digitized hits in local module coordinates to global.
         """
         global_coords_det_ids = []
         for det_id in self.det_ids:
-            pixel_module = pix_det[det_id]
-            local_coords = self._to_local_coords(det_id, pix_det.rowcol_mapping)
+            pixel_module = self.detector[det_id]
+            local_coords = self._to_local_coords(det_id, self.detector.rowcol_mapping)
             global_coords_det_id = pixel_module.to_global_coords(local_coords)
             global_coords_det_ids.append(global_coords_det_id)
 
         global_coords = np.concatenate(global_coords_det_ids)
         return global_coords
 
-
     @staticmethod
-    def read_root(path: str, branch="analyzer/digiTree") -> list[Self]:
+    def read_root(path: str, detector: PixelDetector, branch="analyzer/digiTree") -> list[Self]:
         file = uproot.open(path)
         df = file[branch].arrays(library="pd")
 
@@ -55,12 +58,13 @@ class PixelDigiEvent:
                     "col": det_df["col"].to_numpy().astype(np.uint16),
                     "adc": det_df["adc"].to_numpy().astype(np.uint8),
                 }
-            events.append(PixelDigiEvent(event_id, det_dict))
+            events.append(PixelDigiEvent(event_id, det_dict, detector))
         return events
 
-    def _to_local_coords(self, det_id, rowcol_mapping: RowColMapping) -> np.ndarray:
+    def _to_local_coords(self, det_id) -> np.ndarray:
         """Convert row/col hits to local coordinates of a pixel module
         """
+        rowcol_mapping = self.detector.rowcol_mapping
         det_rows = self.det_id_hits[det_id]["row"]
         det_cols = self.det_id_hits[det_id]["col"]
         local_coords = rowcol_mapping.to_local_coords(det_rows, det_cols)
