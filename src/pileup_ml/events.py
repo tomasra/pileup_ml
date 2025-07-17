@@ -38,6 +38,7 @@ class PixelModuleHits:
         in local module coordinates (x/y/adc).
         """
         local_coords = self.detector.rowcol_mapping.to_local_coords(self.rows, self.cols)
+        local_coords = local_coords[:, :2]  # Z coordinate is always zero, drop it
         local_coords = np.concatenate((local_coords, self.adcs[:, np.newaxis]), axis=1)
         return local_coords
 
