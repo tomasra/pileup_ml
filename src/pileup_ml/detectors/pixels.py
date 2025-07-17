@@ -33,6 +33,8 @@ class PixelModule(BaseModel):
     det_id: int
     position: np.ndarray
     rotation: np.ndarray
+    rows: int = 160
+    cols: int = 416
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -92,9 +94,11 @@ class PixelDetector:
     def __init__(self, modules: list[PixelModule], rowcol_mapping: RowColMapping):
         self.modules = modules
         self.rowcol_mapping = rowcol_mapping
+        # For fast access by det_id
+        self._detid_modules = {m.det_id: m for m in modules}
 
     def __getitem__(self, det_id: int) -> PixelModule:
-        return next(m for m in self.modules if m.det_id == det_id)
+        return self._detid_modules[det_id]
 
     @property
     def bpix_modules(self):
