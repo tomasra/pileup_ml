@@ -12,7 +12,13 @@ class PixelDigiEvent:
     """Represents digi-level pixel detector hits of a single event
     """
     def __init__(self, id_: int, det_id_hits: dict[int, dict]):
+        self.id_ = id_
         self.det_id_hits = det_id_hits
+
+    def __len__(self):
+        """Number of pixel hits in the event
+        """
+        return sum(len(hits["row"]) for hits in self.det_id_hits.values())
 
     @property
     def det_ids(self):
