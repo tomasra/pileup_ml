@@ -24,13 +24,15 @@ class PixelModuleHits:
         """
         return len(self.adcs)
 
-    def to_image(self) -> np.ndarray:
+    def to_image(self, normalize=True) -> np.ndarray:
         """Represent digitized hits as a 2D image for the pixel module.
-        ADC values are used as pixel intensities and normalized to [0, 1] range.
+        ADC values are used as pixel intensities and normalized to [0, 1] range,
+        if `normalize` is True.
         """
         img = np.zeros((self.module.rows, self.module.cols), dtype=np.float32)
         img[self.rows, self.cols] = self.adcs
-        img /= 255.0
+        if normalize:
+            img /= 255.0
         return img
 
     def to_local_points(self) -> np.ndarray:
@@ -59,6 +61,9 @@ class PixelDigiEvent:
         """
         return sum([len(mh) for mh in self.hits])
 
+    def get_hits(self, module: PixelModuleHits):
+        return next(h for h in self.hits if h.module == module)
+
     def to_global_coords(self) -> np.ndarray:
         """Iterate through pixel detector modules and convert
         their digitized hits in local module coordinates to global.
@@ -79,8 +84,13 @@ class PixelDigiEvent:
         """
         return [(mh.module, mh.to_image()) for mh in self.hits]
 
+    def adcs(self) -> np.ndarray:
+        """Return all ADC values of the event as a single array.
+        """
+        return np.concatenate([mh.adcs for mh in self.hits])
+
     @staticmethod
-    def read_root(path: str, detector: PixelDetector, branch="analyzer/digiTree") -> list[Self]:
+    def read_root(path: str, detector: PixelDetector, branch="analyzer/digiTree") -> list['PixelDigiEvent']:
         file = uproot.open(path)
         # ROOT file contents as awkward array
         ak_events = file[branch].arrays()
