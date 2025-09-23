@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing_extensions import Self
 
+import cv2
 import uproot
 import numpy as np
 import awkward as ak
@@ -24,12 +25,39 @@ class PixelModuleHits:
         """
         return len(self.adcs)
 
+    @property
+    def clusters(self) -> list["PixelModuleHitCluster"]:
+        """Find connected pixel hit clusters in the module using 8-connectivity.
+        Uses OpenCV's connectedComponents function.
+
+        Returns:
+            list[PixelModuleHitCluster]: detected pixel hit clusters
+        """
+        hit_map = self.to_image(normalize=False)
+        mask = hit_map > 0
+        n_clusters, cluster_indices = cv2.connectedComponents(mask.astype(np.uint8), connectivity=8)
+
+        clusters = []
+        for cluster_id in range(1, n_clusters + 1):
+            cluster_rows, cluster_cols = np.where(cluster_indices == cluster_id)
+            cluster_adcs = hit_map[np.where(cluster_indices == cluster_id)]
+            cluster = PixelModuleHitCluster(
+                detector=self.detector,
+                module=self.module,
+                rows=cluster_rows,
+                cols=cluster_cols,
+                adcs=cluster_adcs
+            )
+            clusters.append(cluster)
+        return clusters
+
     def to_image(self, normalize=True) -> np.ndarray:
         """Represent digitized hits as a 2D image for the pixel module.
         ADC values are used as pixel intensities and normalized to [0, 1] range,
         if `normalize` is True.
         """
-        img = np.zeros((self.module.rows, self.module.cols), dtype=np.float32)
+        img = np.zeros((self.module.rows, self.module.cols),
+                       dtype=np.float32 if normalize else np.uint8)
         img[self.rows, self.cols] = self.adcs
         if normalize:
             img /= 255.0
@@ -43,6 +71,12 @@ class PixelModuleHits:
         local_coords = local_coords[:, :2]  # Z coordinate is always zero, drop it
         local_coords = np.concatenate((local_coords, self.adcs[:, np.newaxis]), axis=1)
         return local_coords
+
+
+@dataclass
+class PixelModuleHitCluster(PixelModuleHits):
+    # TODO: add methods for cluster properties (size, total adc, centroid, etc)
+    pass
 
 
 class PixelDigiEvent:
