@@ -61,8 +61,12 @@ class PixelDigiEvent:
         """
         return sum([len(mh) for mh in self.hits])
 
-    def get_hits(self, module: PixelModuleHits):
-        return next(h for h in self.hits if h.module == module)
+    def __getitem__(self, module: PixelModule) -> PixelModuleHits | None:
+        """Get pixel hits for a specific pixel detector module."""
+        try:
+            return next(h for h in self.hits if h.module == module)
+        except StopIteration:
+            return None
 
     def to_global_coords(self) -> np.ndarray:
         """Iterate through pixel detector modules and convert
