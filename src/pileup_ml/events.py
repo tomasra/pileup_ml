@@ -33,20 +33,24 @@ class PixelModuleHits:
         Returns:
             list[PixelModuleHitCluster]: detected pixel hit clusters
         """
-        hit_map = self.to_image(normalize=False)
-        mask = hit_map > 0
-        n_clusters, cluster_indices = cv2.connectedComponents(mask.astype(np.uint8), connectivity=8)
+        image = self.to_image(normalize=False)
+        mask = image > 0
+        n_clusters, labels, stats, centroids = cv2.connectedComponentsWithStats(
+            mask.astype(np.uint8), connectivity=8)
+
+        rows, cols = np.nonzero(mask)
+        cluster_ids = labels[rows, cols]
+        adcs = image[rows, cols]
 
         clusters = []
-        for cluster_id in range(1, n_clusters + 1):
-            cluster_rows, cluster_cols = np.where(cluster_indices == cluster_id)
-            cluster_adcs = hit_map[np.where(cluster_indices == cluster_id)]
+        for cluster_id in range(1, n_clusters):
+            sel = cluster_ids == cluster_id
             cluster = PixelModuleHitCluster(
                 detector=self.detector,
                 module=self.module,
-                rows=cluster_rows,
-                cols=cluster_cols,
-                adcs=cluster_adcs
+                rows=rows[sel],
+                cols=cols[sel],
+                adcs=adcs[sel]
             )
             clusters.append(cluster)
         return clusters
@@ -75,8 +79,13 @@ class PixelModuleHits:
 
 @dataclass
 class PixelModuleHitCluster(PixelModuleHits):
-    # TODO: add methods for cluster properties (size, total adc, centroid, etc)
-    pass
+    @property
+    def width(self) -> int:
+        return self.cols.max() - self.cols.min() + 1
+
+    @property
+    def height(self) -> int:
+        return self.rows.max() - self.rows.min() + 1
 
 
 class PixelDigiEvent:
