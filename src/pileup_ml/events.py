@@ -25,18 +25,28 @@ class PixelModuleHits:
         """
         return len(self.adcs)
 
-    @property
-    def clusters(self) -> list["PixelModuleHitCluster"]:
+    def clusters(self, dilation_size=1) -> list["PixelModuleHitCluster"]:
         """Find connected pixel hit clusters in the module using 8-connectivity.
         Uses OpenCV's connectedComponents function.
+
+        Args:
+            dilation_size (int): size of the structuring element used for dilating the mask.
+                Increasing this value will make pixels that are further apart be grouped
+                into the same cluster.
 
         Returns:
             list[PixelModuleHitCluster]: detected pixel hit clusters
         """
         image = self.to_image(normalize=False)
         mask = image > 0
-        n_clusters, labels, stats, centroids = cv2.connectedComponentsWithStats(
-            mask.astype(np.uint8), connectivity=8)
+
+        # Detect connected components in dilated mask to put nearby pixels in the same cluster
+        mask_dilated = cv2.dilate(
+            mask.astype(np.uint8),
+            cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (dilation_size, dilation_size)),
+            iterations=1)
+        n_clusters, labels = cv2.connectedComponents(
+            mask_dilated.astype(np.uint8), connectivity=8)
 
         rows, cols = np.nonzero(mask)
         cluster_ids = labels[rows, cols]
