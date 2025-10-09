@@ -17,11 +17,11 @@ dependencies = [
     "python-dotenv>=1.1.0",
     "tensorboard>=2.20.0",
     "tensorboard-plugin-profile>=2.20.6",
-    "torch>=2.8.0",
-    "torch-cluster>=1.6.3",
-    "torch-geometric>=2.6.1",
-    "torchinfo>=1.8.0",
-    "torchvision>=0.23.0",
+    "torch>=2.8.0; sys_platform == 'linux'",
+    "torch-cluster>=1.6.3; sys_platform == 'linux'",
+    "torch-geometric>=2.6.1; sys_platform == 'linux'",
+    "torchinfo>=1.8.0; sys_platform == 'linux'",
+    "torchvision>=0.23.0; sys_platform == 'linux'",
     "uproot>=5.6.2",
 ]
 
